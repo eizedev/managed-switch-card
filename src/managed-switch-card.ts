@@ -13,6 +13,7 @@ import {
   portTitle,
   powered,
   rateLabel,
+  speedLabel,
   tone,
   words,
   type Layout,
@@ -37,6 +38,7 @@ interface CardConfig {
   device_id?: string;
   title?: string;
   show_names?: boolean;
+  show_speed?: boolean;
   show_rates?: boolean;
   layout?: Layout;
 }
@@ -61,11 +63,16 @@ export class ManagedSwitchCard extends LitElement {
     const entity = Object.values(hass.entities ?? {}).find(
       (e) => e?.platform === "managed_switch" && e.device_id,
     );
-    return { device_id: entity?.device_id ?? undefined, show_names: true, show_rates: false };
+    return {
+      device_id: entity?.device_id ?? undefined,
+      show_names: true,
+      show_speed: true,
+      show_rates: false,
+    };
   }
 
   setConfig(config: CardConfig): void {
-    this._config = { show_names: true, show_rates: false, ...config };
+    this._config = { show_names: true, show_speed: true, show_rates: false, ...config };
     this._loader.reset();
     this._available = "";
   }
@@ -125,7 +132,12 @@ export class ManagedSwitchCard extends LitElement {
           ${port.poe && powered(states[e.poe ?? ""])
             ? html`<ha-icon icon="mdi:flash" class="badge poe"></ha-icon>`
             : nothing}
-          ${port.trunk !== null ? html`<span class="badge trunk">T</span>` : nothing}
+          <span class="bottom">
+            ${port.trunk !== null ? html`<span class="trunk">T</span>` : nothing}
+            ${this._config?.show_speed && ["fast", "slow", "slowest"].includes(kind)
+              ? html`<span class="speed">${speedLabel(states[e.speed ?? ""])}</span>`
+              : nothing}
+          </span>
         </span>
         <span class="name">${port.name}</span>
         ${this._config?.show_names
@@ -329,6 +341,21 @@ export class ManagedSwitchCard extends LitElement {
       background: var(--disabled-color, #bdbdbd);
       opacity: 0.5;
     }
+    /* trunk mark and speed in the lower half, under the link and PoE symbols */
+    .bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 1px;
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      font-size: 0.75em;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text-primary-color, #fff);
+      pointer-events: none;
+    }
     .badge {
       position: absolute;
       --mdc-icon-size: 14px;
@@ -341,13 +368,6 @@ export class ManagedSwitchCard extends LitElement {
     .badge.poe {
       right: 2px;
       top: 2px;
-    }
-    .badge.trunk {
-      left: 50%;
-      bottom: 1px;
-      transform: translateX(-50%);
-      font-size: 0.8em;
-      font-weight: bold;
     }
     .name {
       font-weight: 500;
@@ -407,6 +427,7 @@ export class ManagedSwitchCardEditor extends LitElement {
         name: "",
         schema: [
           { name: "show_names", selector: { boolean: {} } },
+          { name: "show_speed", selector: { boolean: {} } },
           { name: "show_rates", selector: { boolean: {} } },
         ],
       },
