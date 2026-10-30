@@ -16,7 +16,7 @@ the device connected to each port. It shows what the
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eizedev&repository=managed-switch-card&category=plugin)
 
-<img src="https://raw.githubusercontent.com/eizedev/managed-switch-card/main/assets/card.png" alt="Three switches as cards: green ports at 1 Gbit/s, orange at 100 Mbit/s, white without link, arrows on the links between the switches, the device name under each port" width="100%">
+<img src="https://raw.githubusercontent.com/eizedev/managed-switch-card/main/assets/card.png" alt="Three switches as cards: green ports at 1 Gbit/s, orange at 100 Mbit/s, empty without link, a link symbol on the ports between the switches, the device name under each port" width="100%">
 
 **Documentation: [ha-managed-switch.eize.dev/card](https://ha-managed-switch.eize.dev/card/)**
 

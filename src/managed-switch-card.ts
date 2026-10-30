@@ -120,7 +120,7 @@ export class ManagedSwitchCard extends LitElement {
         @click=${() => this._open(e.device ?? e.link)}
       >
         <span class="jack">
-          ${port.uplink ? html`<ha-icon icon="mdi:arrow-up-bold" class="badge up"></ha-icon>` : nothing}
+          ${port.uplink ? html`<ha-icon icon="mdi:swap-horizontal-bold" class="badge link"></ha-icon>` : nothing}
           ${port.poe && powered(states[e.poe ?? ""])
             ? html`<ha-icon icon="mdi:flash" class="badge poe"></ha-icon>`
             : nothing}
@@ -331,7 +331,7 @@ export class ManagedSwitchCard extends LitElement {
       --mdc-icon-size: 14px;
       color: var(--text-primary-color, #fff);
     }
-    .badge.up {
+    .badge.link {
       left: 2px;
       top: 2px;
     }

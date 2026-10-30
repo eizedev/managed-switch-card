@@ -1,6 +1,6 @@
 {
   "name": "managed-switch-card",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Lovelace card that draws a managed switch's front panel from the Managed Switch (SNMP) Home Assistant integration",
   "license": "MIT",
   "private": true,
