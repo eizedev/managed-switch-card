@@ -34,7 +34,21 @@ jobs:
     name: HACS
     runs-on: ubuntu-latest
     steps:
-      - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main 2026-06-08
+      # HACS installs a plugin from its latest release, so the check needs one. Before the first
+      # release (and in the run that creates it) there is nothing to check yet.
+      - name: Find a release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh release view --repo "$REPO" --json tagName >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No release yet; the HACS check runs from the first release on."
+          fi
+      - if: steps.release.outputs.exists == 'true'
+        uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main 2026-06-08
         with:
           category: plugin
 

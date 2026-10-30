@@ -3,9 +3,13 @@
 
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 
+import { PortsLoader, errorText } from "./loader";
 import {
+  availability,
+  cardSize,
   deviceLabel,
   layoutFor,
+  numeric,
   portTitle,
   powered,
   rateLabel,
@@ -14,6 +18,7 @@ import {
   type Layout,
   type PortInfo,
   type PortsReply,
+  type StateLike,
   type States,
 } from "./model";
 
@@ -23,6 +28,7 @@ interface Hass {
   states: States;
   entities?: Record<string, { platform?: string; device_id?: string | null } | undefined>;
   language?: string;
+  formatEntityState?(state: StateLike): string;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
 }
 
@@ -35,23 +41,16 @@ interface CardConfig {
   layout?: Layout;
 }
 
-// The ports are read again this often, and when the card's switch is set up again.
-const REFRESH_MS = 5 * 60 * 1000;
-
 export class ManagedSwitchCard extends LitElement {
   static override properties = {
     hass: { attribute: false },
     _config: { state: true },
-    _reply: { state: true },
-    _error: { state: true },
   };
 
   hass?: Hass;
   private _config?: CardConfig;
-  private _reply?: PortsReply;
-  private _error?: string;
-  private _loadedFor?: string;
-  private _loadedAt = 0;
+  private _loader = new PortsLoader(() => this.requestUpdate());
+  private _available = "";
 
   static getConfigElement(): HTMLElement {
     return document.createElement("managed-switch-card-editor");
@@ -67,12 +66,15 @@ export class ManagedSwitchCard extends LitElement {
 
   setConfig(config: CardConfig): void {
     this._config = { show_names: true, show_rates: false, ...config };
-    this._reply = undefined;
-    this._loadedFor = undefined;
+    this._loader.reset();
+    this._available = "";
   }
 
   getCardSize(): number {
-    return 3;
+    const reply = this._loader.reply;
+    if (!reply) return 3;
+    const trunks = reply.ports.filter((p) => p.kind === "trunk").length;
+    return cardSize(layoutFor(reply, this._config?.layout), trunks);
   }
 
   getGridOptions(): Record<string, number> {
@@ -83,20 +85,16 @@ export class ManagedSwitchCard extends LitElement {
     super.updated(changed);
     const id = this._config?.device_id;
     if (!this.hass || !id) return;
-    if (this._loadedFor !== id || Date.now() - this._loadedAt > REFRESH_MS) {
-      this._loadedFor = id;
-      this._loadedAt = Date.now();
-      this.hass
-        .callWS<PortsReply>({ type: "managed_switch/ports", device_id: id })
-        .then((reply) => {
-          this._reply = reply;
-          this._error = undefined;
-        })
-        .catch((err: { message?: string }) => {
-          this._error = err.message ?? String(err);
-        });
-    }
+    const hass = this.hass;
+    // Entities coming back mean the switch was set up again: its ports may have changed.
+    const available = availability(this._loader.reply, hass.states);
+    const again = this._available !== "" && available !== this._available && !available.includes("0");
+    this._available = available;
+    this._loader.load((m) => hass.callWS<PortsReply>(m), id, Date.now(), again);
   }
+
+  private _format = (state: StateLike): string =>
+    this.hass?.formatEntityState?.(state) ?? state.state;
 
   private _open(entityId: string | null | undefined): void {
     if (!entityId) return;
@@ -113,11 +111,12 @@ export class ManagedSwitchCard extends LitElement {
     const rates = this._config?.show_rates
       ? [rateLabel(states[e.received ?? ""]), rateLabel(states[e.sent ?? ""])]
       : ["", ""];
+    const title = portTitle(port, states, w, this._format);
     return html`
       <button
         class="port ${kind} ${sfp ? "sfp" : ""}"
-        title=${portTitle(port, states, w)}
-        aria-label=${portTitle(port, states, w)}
+        title=${title}
+        aria-label=${title.replaceAll("\n", ", ")}
         @click=${() => this._open(e.device ?? e.link)}
       >
         <span class="jack">
@@ -143,18 +142,19 @@ export class ManagedSwitchCard extends LitElement {
     if (!this._config?.device_id) {
       return html`<ha-card><div class="note">${w.noSwitch}</div></ha-card>`;
     }
-    if (this._error) {
-      return html`<ha-card><div class="note">${this._error}</div></ha-card>`;
+    const reply = this._loader.reply;
+    const error = this._loader.error;
+    if (!reply) {
+      const text = error === undefined ? "…" : errorText(error, w);
+      return html`<ha-card><div class="note">${text}</div></ha-card>`;
     }
-    const reply = this._reply;
-    if (!reply) return html`<ha-card><div class="note">…</div></ha-card>`;
     const byName = new Map(reply.ports.map((p) => [p.name, p]));
     const layout = layoutFor(reply, this._config.layout);
     const trunks = reply.ports.filter((p) => p.kind === "trunk");
     const states = this.hass?.states ?? {};
     const se = reply.switch.entities;
-    const consumption = states[se.poe_consumption ?? ""];
-    const budget = states[se.poe_budget ?? ""];
+    const consumption = numeric(states[se.poe_consumption ?? ""]);
+    const budget = numeric(states[se.poe_budget ?? ""]);
     return html`
       <ha-card>
         <div class="header">
@@ -162,12 +162,13 @@ export class ManagedSwitchCard extends LitElement {
             <div class="title">${this._config.title ?? reply.switch.name}</div>
             <div class="model">${[reply.switch.model, reply.switch.firmware].filter(Boolean).join(" · ")}</div>
           </div>
-          ${consumption && budget
-            ? html`<div class="poe-total" @click=${() => this._open(se.poe_consumption)}>
-                <ha-icon icon="mdi:flash"></ha-icon>${consumption.state} / ${budget.state} W
-              </div>`
+          ${consumption !== undefined && budget !== undefined
+            ? html`<button class="poe-total" @click=${() => this._open(se.poe_consumption)}>
+                <ha-icon icon="mdi:flash"></ha-icon>${consumption} / ${budget} W
+              </button>`
             : nothing}
         </div>
+        ${error !== undefined ? html`<div class="note">${errorText(error, w)}</div>` : nothing}
         <div class="panel">
           <div class="rows">
             ${layout.rows.map(
@@ -222,12 +223,17 @@ export class ManagedSwitchCard extends LitElement {
       font-size: 0.85em;
     }
     .poe-total {
+      all: unset;
       display: flex;
       align-items: center;
       gap: 4px;
       cursor: pointer;
       color: var(--secondary-text-color);
       white-space: nowrap;
+    }
+    .poe-total:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
     .poe-total ha-icon {
       --mdc-icon-size: 18px;
@@ -309,6 +315,10 @@ export class ManagedSwitchCard extends LitElement {
       background: var(--error-color, #db4437);
       border-color: var(--error-color, #db4437);
     }
+    .up .jack {
+      background: var(--info-color, #039be5);
+      border-color: var(--info-color, #039be5);
+    }
     .down .jack {
       background: var(--card-background-color);
     }
@@ -338,6 +348,10 @@ export class ManagedSwitchCard extends LitElement {
     }
     .name {
       font-weight: 500;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .device,
     .rate {
@@ -392,16 +406,8 @@ export class ManagedSwitchCardEditor extends LitElement {
     ];
   }
 
-  private _label = (field: { name: string }): string => {
-    const de = (this.hass?.language ?? "en").startsWith("de");
-    const labels: Record<string, [string, string]> = {
-      device_id: ["Switch", "Switch"],
-      title: ["Title (optional)", "Titel (optional)"],
-      show_names: ["Device names under the ports", "Gerätenamen unter den Ports"],
-      show_rates: ["Data rates (sensors must be on)", "Datenraten (Sensoren müssen an sein)"],
-    };
-    return labels[field.name]?.[de ? 1 : 0] ?? field.name;
-  };
+  private _label = (field: { name: string }): string =>
+    words(this.hass?.language).fields[field.name] ?? field.name;
 
   private _changed(event: CustomEvent<{ value: CardConfig }>): void {
     this.dispatchEvent(
@@ -440,12 +446,14 @@ interface CustomCardEntry {
 
 const registry = window as unknown as { customCards?: CustomCardEntry[] };
 registry.customCards = registry.customCards ?? [];
-registry.customCards.push({
-  type: "managed-switch-card",
-  name: "Managed Switch",
-  description: "The front panel of a managed switch: ports by link and speed, PoE, connected devices.",
-  preview: true,
-  documentationURL: "https://ha-managed-switch.eize.dev/card/",
-});
+if (!registry.customCards.some((card) => card.type === "managed-switch-card")) {
+  registry.customCards.push({
+    type: "managed-switch-card",
+    name: "Managed Switch",
+    description: "The front panel of a managed switch: ports by link and speed, PoE, connected devices.",
+    preview: true,
+    documentationURL: "https://ha-managed-switch.eize.dev/card/",
+  });
+}
 
 console.info(`%c MANAGED-SWITCH-CARD %c ${__VERSION__} `, "color:#fff;background:#4078f2", "");
