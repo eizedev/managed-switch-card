@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-30
+
+### Fixed
+
+- In a sections view the card is as high as its ports and trunks need; the trunks no longer
+  overlap the next card.
+- In a narrow card (phones, three columns) the SFP ports move below the others instead of
+  covering the last ports; long device names no longer widen a port.
+
 ## [0.1.1] - 2026-10-30
 
 ### Changed
@@ -30,6 +39,7 @@ First release.
   tries again after 15 seconds and reads the ports again once the switch is back; it says when
   the integration is too old.
 
-[Unreleased]: https://github.com/eizedev/managed-switch-card/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/eizedev/managed-switch-card/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/eizedev/managed-switch-card/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/eizedev/managed-switch-card/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/eizedev/managed-switch-card/releases/tag/v0.1.0
