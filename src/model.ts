@@ -99,6 +99,16 @@ export function tone(link: StateLike | undefined, speed: StateLike | undefined):
   return mbits >= 100 ? "slow" : "slowest";
 }
 
+/**
+ * The speed written in a port with link, so its state does not rest on colour alone: "10G",
+ * "2.5G", "1G", "100", "10"; "" without a known speed.
+ */
+export function speedLabel(speed: StateLike | undefined): string {
+  const mbits = speed?.state ? Number(speed.state) : NaN;
+  if (!Number.isFinite(mbits) || mbits <= 0) return "";
+  return mbits >= 1000 ? `${mbits / 1000}G` : `${mbits}`;
+}
+
 /** A number for display, or undefined for a state that is none ("unknown", "unavailable"). */
 export function numeric(state: StateLike | undefined): number | undefined {
   const value = state?.state ? Number(state.state) : NaN;
@@ -182,6 +192,7 @@ export const WORDS: Record<string, Words> = {
       device_id: "Switch",
       title: "Title (optional)",
       show_names: "Device names under the ports",
+      show_speed: "Speed in the ports",
       show_rates: "Data rates (sensors must be on)",
     },
   },
@@ -200,6 +211,7 @@ export const WORDS: Record<string, Words> = {
       device_id: "Switch",
       title: "Titel (optional)",
       show_names: "Gerätenamen unter den Ports",
+      show_speed: "Geschwindigkeit in den Ports",
       show_rates: "Datenraten (Sensoren müssen an sein)",
     },
   },
