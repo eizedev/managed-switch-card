@@ -77,8 +77,9 @@ export class ManagedSwitchCard extends LitElement {
     return cardSize(layoutFor(reply, this._config?.layout), trunks);
   }
 
-  getGridOptions(): Record<string, number> {
-    return { columns: 12, min_columns: 6, rows: 3 };
+  /** In a sections view: full width, as high as the ports and trunks need. */
+  getGridOptions(): Record<string, number | string> {
+    return { columns: 12, min_columns: 6, rows: "auto" };
   }
 
   protected override updated(changed: PropertyValues): void {
@@ -246,13 +247,15 @@ export class ManagedSwitchCard extends LitElement {
       border-radius: 10px;
       background: var(--secondary-background-color);
       overflow-x: auto;
+      /* the SFP ports move below the others when the card is too narrow for both */
+      flex-wrap: wrap;
     }
     .rows {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      flex: 1 1 auto;
-      min-width: 0;
+      flex: 1 1 0;
+      min-width: min-content;
     }
     .row {
       display: flex;
@@ -348,7 +351,10 @@ export class ManagedSwitchCard extends LitElement {
     }
     .name {
       font-weight: 500;
-      max-width: 100%;
+      /* as wide as the port, however long the text: it does not widen the port */
+      width: 0;
+      min-width: 100%;
+      text-align: center;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -357,7 +363,8 @@ export class ManagedSwitchCard extends LitElement {
     .rate {
       color: var(--secondary-text-color);
       text-align: center;
-      max-width: 100%;
+      width: 0;
+      min-width: 100%;
       font-size: 0.9em;
       overflow: hidden;
       text-overflow: ellipsis;
