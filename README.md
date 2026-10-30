@@ -40,6 +40,9 @@ device_id: 0123456789abcdef0123456789abcdef  # the switch, chosen in the card's 
 title: Hallway                               # optional, else the switch's name
 show_names: true                             # device names under the ports (default)
 show_rates: false                            # data rates; the integration's rate sensors must be on
+layout:                                      # optional: your own front panel, by port name
+  rows: [["1", "3", "5", "7"], ["2", "4", "6", "8"]]
+  sfp: ["9", "10"]
 ```
 
 Details, colours and your own layout: [documentation](https://ha-managed-switch.eize.dev/card/).

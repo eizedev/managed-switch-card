@@ -19,6 +19,9 @@ First release.
   automatic layout for other switches, and a layout of your own in YAML.
 - A click on a port opens its device sensor; a settings dialog with a switch picker; English and
   German.
+- While Home Assistant starts or the switch is set up again, the card keeps its last picture,
+  tries again after 15 seconds and reads the ports again once the switch is back; it says when
+  the integration is too old.
 
 [Unreleased]: https://github.com/eizedev/managed-switch-card/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/eizedev/managed-switch-card/releases/tag/v0.1.0
