@@ -11,6 +11,10 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: "development"
+    ignore:
+      # The Node types follow the Node version in the workflows (node-version), not the newest.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     labels: ["dependencies"]
     commit-message:
       prefix: "build(deps)"
