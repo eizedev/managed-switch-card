@@ -1,0 +1,25 @@
+name: Layout for a switch model
+description: Tell the card how your switch's front panel looks.
+labels: ["enhancement", "compatibility"]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Switch model
+    validations:
+      required: true
+  - type: input
+    id: object_id
+    attributes:
+      label: sysObjectID
+      description: From the integration's diagnostics (system.object_id).
+    validations:
+      required: true
+  - type: textarea
+    id: layout
+    attributes:
+      label: Port names, row by row, and the SFP slots
+      description: As you would write them in the card's `layout:` option.
+      render: yaml
+    validations:
+      required: true
