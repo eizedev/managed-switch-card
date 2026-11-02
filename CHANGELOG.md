@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The card moved into [ha-managed-switch](https://github.com/eizedev/ha-managed-switch) 0.6.0; this repository is archived.
+
 ## [0.2.0] - 2026-10-30
 
 ### Added
